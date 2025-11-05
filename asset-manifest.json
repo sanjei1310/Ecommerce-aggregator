@@ -1,0 +1,13 @@
+{
+  "files": {
+    "main.css": "/Ecommerce-aggregator/static/css/main.54c3b3a0.css",
+    "main.js": "/Ecommerce-aggregator/static/js/main.cac0ee60.js",
+    "index.html": "/Ecommerce-aggregator/index.html",
+    "main.54c3b3a0.css.map": "/Ecommerce-aggregator/static/css/main.54c3b3a0.css.map",
+    "main.cac0ee60.js.map": "/Ecommerce-aggregator/static/js/main.cac0ee60.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.54c3b3a0.css",
+    "static/js/main.cac0ee60.js"
+  ]
+}
