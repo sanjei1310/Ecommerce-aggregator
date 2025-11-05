@@ -3,6 +3,7 @@ import { XMarkIcon, StarIcon, ShoppingCartIcon, ArrowTopRightOnSquareIcon, Chevr
 import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
 import { useAppContext } from '../../context/AppContext';
 import { motion, AnimatePresence } from 'framer-motion';
+import PriceComparison from './PriceComparison';
 
 const ProductDetail = () => {
   const { selectedProduct, isProductDetailOpen, closeProductDetail, addToCart } = useAppContext();
@@ -306,7 +307,7 @@ const ProductDetail = () => {
               {/* Tabs */}
               <div className="border-b border-white/20 mb-6">
                 <div className="flex gap-6">
-                  {['description', 'specifications', 'reviews'].map((tab) => (
+                  {['description', 'specifications', 'reviews', 'compare'].map((tab) => (
                     <button
                       key={tab}
                       onClick={() => setActiveTab(tab)}
@@ -317,7 +318,7 @@ const ProductDetail = () => {
                       }`}
                       style={{ textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)' }}
                     >
-                      {tab}
+                      {tab === 'compare' ? 'Price Compare' : tab}
                     </button>
                   ))}
                 </div>
@@ -419,6 +420,10 @@ const ProductDetail = () => {
                         </p>
                       </div>
                     </div>
+                  )}
+
+                  {activeTab === 'compare' && (
+                    <PriceComparison currentProduct={selectedProduct} />
                   )}
                 </motion.div>
               </AnimatePresence>

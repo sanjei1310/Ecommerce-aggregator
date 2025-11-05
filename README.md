@@ -177,5 +177,17 @@ This project is open source and available under the MIT License.
 
 This is an MVP (Minimum Viable Product) that demonstrates the core functionality of an e-commerce aggregator. The application uses mock data for demonstration purposes. In a production environment, this would be integrated with real e-commerce APIs.
 
+### To customize the mock data:
+Edit `src/services/mockDataService.js` to add or modify products.
 
+### To change the theme:
+Modify the color palette in `tailwind.config.js`.
 
+### To add new platforms:
+1. Add platform data in mockDataService.js
+2. Update platform colors in ProductCard.js
+3. Add platform logo references
+
+---
+
+**Built with ❤️ for modern shoppers**

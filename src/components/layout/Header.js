@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
-import { ShoppingCartIcon, MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { ShoppingCartIcon, MagnifyingGlassIcon, XMarkIcon, UserIcon } from '@heroicons/react/24/outline';
 import { useAppContext } from '../../context/AppContext';
+import { useAuth } from '../../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
+import AuthModal from '../auth/AuthModal';
+import UserProfile from '../auth/UserProfile';
 
 const Header = () => {
   const { 
@@ -11,7 +14,9 @@ const Header = () => {
     setIsCartOpen 
   } = useAppContext();
   
+  const { user } = useAuth();
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const cartItemCount = getCartItemCount();
 
   const handleSearchSubmit = (e) => {
@@ -93,32 +98,59 @@ const Header = () => {
             </div>
           </motion.form>
 
-          {/* Cart Icon */}
-          <motion.button
-            onClick={() => setIsCartOpen(true)}
-            className="relative p-3 rounded-xl hover:bg-gray-100 transition-all duration-200 group"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <ShoppingCartIcon className="h-6 w-6 text-white transition-colors" />
-            <AnimatePresence>
-              {cartItemCount > 0 && (
-                <motion.span
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  exit={{ scale: 0 }}
-                  className="absolute -top-1 -right-1 bg-gradient-to-br from-red-500 to-pink-500 text-white text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center shadow-lg"
-                >
-                  {cartItemCount}
-                </motion.span>
-              )}
-            </AnimatePresence>
-          </motion.button>
+          {/* Auth & Cart Section */}
+          <div className="flex items-center gap-3">
+            {/* Auth Button/Profile */}
+            {user ? (
+              <UserProfile />
+            ) : (
+              <motion.button
+                onClick={() => setIsAuthModalOpen(true)}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-all duration-200"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5, delay: 0.15 }}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <UserIcon className="h-5 w-5" />
+                <span className="hidden sm:block text-sm font-medium">Sign In</span>
+              </motion.button>
+            )}
+
+            {/* Cart Icon */}
+            <motion.button
+              onClick={() => setIsCartOpen(true)}
+              className="relative p-3 rounded-xl hover:bg-white/10 transition-all duration-200 group"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <ShoppingCartIcon className="h-6 w-6 text-white transition-colors" />
+              <AnimatePresence>
+                {cartItemCount > 0 && (
+                  <motion.span
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    exit={{ scale: 0 }}
+                    className="absolute -top-1 -right-1 bg-gradient-to-br from-red-500 to-pink-500 text-white text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center shadow-lg"
+                  >
+                    {cartItemCount}
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </motion.button>
+          </div>
         </div>
       </div>
+
+      {/* Auth Modal */}
+      <AuthModal 
+        isOpen={isAuthModalOpen} 
+        onClose={() => setIsAuthModalOpen(false)} 
+      />
     </header>
   );
 };

@@ -1,5 +1,7 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
+import { DatabaseService } from '../services/database';
 import { getAllProducts, searchProducts } from '../services/mockDataService';
+import { useAuth } from './AuthContext';
 
 const AppContext = createContext();
 
@@ -12,6 +14,8 @@ export const useAppContext = () => {
 };
 
 export const AppProvider = ({ children }) => {
+  const { user } = useAuth();
+  
   // Products state
   const [allProducts, setAllProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
@@ -29,11 +33,8 @@ export const AppProvider = ({ children }) => {
     sortBy: 'relevance'
   });
   
-  // Cart state
-  const [cart, setCart] = useState(() => {
-    const savedCart = localStorage.getItem('cart');
-    return savedCart ? JSON.parse(savedCart) : [];
-  });
+  // Cart state - user-specific
+  const [cart, setCart] = useState([]);
   
   // UI state
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -45,11 +46,52 @@ export const AppProvider = ({ children }) => {
     const loadProducts = async () => {
       setLoading(true);
       try {
+        // Try to load from database first
+        const dbResult = await DatabaseService.getProducts();
+        
+        if (dbResult.success && dbResult.data.length > 0) {
+          // Transform database products to match expected format
+          const transformedProducts = dbResult.data.map(product => ({
+            id: product.id,
+            title: product.title,
+            description: product.description,
+            price: {
+              current: product.current_price,
+              original: product.original_price,
+              currency: product.currency
+            },
+            images: product.images,
+            rating: {
+              average: product.rating_average.toString(),
+              count: product.rating_count
+            },
+            platform: {
+              name: product.platform_name,
+              logo: product.platform_logo,
+              url: product.platform_url,
+              color: product.platform_color
+            },
+            category: product.category,
+            brand: product.brand,
+            availability: product.availability,
+            specifications: product.specifications
+          }));
+          
+          setAllProducts(transformedProducts);
+          setFilteredProducts(transformedProducts);
+        } else {
+          // Fallback to mock data if database is empty
+          console.log('Database empty, using mock data');
+          const products = getAllProducts();
+          setAllProducts(products);
+          setFilteredProducts(products);
+        }
+      } catch (error) {
+        console.error('Error loading products:', error);
+        // Fallback to mock data on error
         const products = getAllProducts();
         setAllProducts(products);
         setFilteredProducts(products);
-      } catch (error) {
-        console.error('Error loading products:', error);
       } finally {
         setLoading(false);
       }
@@ -63,10 +105,87 @@ export const AppProvider = ({ children }) => {
     const applyFilters = async () => {
       setLoading(true);
       try {
-        const results = searchProducts(searchQuery, filters);
-        setFilteredProducts(results);
+        if (allProducts.length === 0) return;
+        
+        // Use database search if available, otherwise use local filtering
+        if (searchQuery.trim()) {
+          const dbResult = await DatabaseService.searchProducts(searchQuery);
+          if (dbResult.success) {
+            // Transform database results
+            const transformedResults = dbResult.data.map(product => ({
+              id: product.id,
+              title: product.title,
+              description: product.description,
+              price: {
+                current: product.current_price,
+                original: product.original_price,
+                currency: product.currency
+              },
+              images: product.images,
+              rating: {
+                average: product.rating_average.toString(),
+                count: product.rating_count
+              },
+              platform: {
+                name: product.platform_name,
+                logo: product.platform_logo,
+                url: product.platform_url,
+                color: product.platform_color
+              },
+              category: product.category,
+              brand: product.brand,
+              availability: product.availability,
+              specifications: product.specifications
+            }));
+            setFilteredProducts(transformedResults);
+          } else {
+            // Fallback to local search
+            const results = searchProducts(searchQuery, filters, allProducts);
+            setFilteredProducts(results);
+          }
+        } else {
+          // No search query, show all products with filters applied
+          if (allProducts.length > 0) {
+            const results = searchProducts('', filters, allProducts);
+            setFilteredProducts(results);
+          } else {
+            // If no products loaded yet, try to get all from database
+            const dbResult = await DatabaseService.getProducts();
+            if (dbResult.success) {
+              const transformedResults = dbResult.data.map(product => ({
+                id: product.id,
+                title: product.title,
+                description: product.description,
+                price: {
+                  current: product.current_price,
+                  original: product.original_price,
+                  currency: product.currency
+                },
+                images: product.images,
+                rating: {
+                  average: product.rating_average.toString(),
+                  count: product.rating_count
+                },
+                platform: {
+                  name: product.platform_name,
+                  logo: product.platform_logo,
+                  url: product.platform_url,
+                  color: product.platform_color
+                },
+                category: product.category,
+                brand: product.brand,
+                availability: product.availability,
+                specifications: product.specifications
+              }));
+              setFilteredProducts(transformedResults);
+            }
+          }
+        }
       } catch (error) {
         console.error('Error applying filters:', error);
+        // Fallback to local filtering
+        const results = searchProducts(searchQuery, filters);
+        setFilteredProducts(results);
       } finally {
         setLoading(false);
       }
@@ -74,12 +193,27 @@ export const AppProvider = ({ children }) => {
     
     const debounceTimer = setTimeout(applyFilters, 300);
     return () => clearTimeout(debounceTimer);
-  }, [searchQuery, filters]);
+  }, [searchQuery, filters, allProducts]);
   
-  // Save cart to localStorage
+  // Load user-specific cart when user changes
   useEffect(() => {
-    localStorage.setItem('cart', JSON.stringify(cart));
-  }, [cart]);
+    if (user?.email) {
+      const userCartKey = `cart_${user.email}`;
+      const savedCart = localStorage.getItem(userCartKey);
+      setCart(savedCart ? JSON.parse(savedCart) : []);
+    } else {
+      // Clear cart when user logs out
+      setCart([]);
+    }
+  }, [user]);
+
+  // Save user-specific cart to localStorage
+  useEffect(() => {
+    if (user?.email) {
+      const userCartKey = `cart_${user.email}`;
+      localStorage.setItem(userCartKey, JSON.stringify(cart));
+    }
+  }, [cart, user]);
   
   // Cart functions
   const addToCart = (product) => {
@@ -114,6 +248,13 @@ export const AppProvider = ({ children }) => {
   
   const clearCart = () => {
     setCart([]);
+  };
+
+  const clearUserCart = (userEmail) => {
+    if (userEmail) {
+      const userCartKey = `cart_${userEmail}`;
+      localStorage.removeItem(userCartKey);
+    }
   };
   
   const getCartTotal = () => {
@@ -171,6 +312,7 @@ export const AppProvider = ({ children }) => {
     removeFromCart,
     updateCartQuantity,
     clearCart,
+    clearUserCart,
     getCartTotal,
     getCartItemCount,
     isCartOpen,
