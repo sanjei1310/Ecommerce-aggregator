@@ -190,4 +190,4 @@ Modify the color palette in `tailwind.config.js`.
 
 ---
 
-**Built with ❤️ for modern shoppers**
+
